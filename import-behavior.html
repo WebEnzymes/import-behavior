@@ -1,5 +1,4 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="../promise-polyfill/promise-polyfill-lite.html">
 
 <script>
   'use strict';
@@ -27,15 +26,29 @@
       return imports;
     },
 
-    _bulkImporter: function(imports) {
-      var promises = [];
+    _bulkImporter: function(imports, resolve, onerror) {
+
+      var onload;
+      if (typeof resolve === 'function') {
+        if (imports.length < 1) {
+          resolve();
+          return;
+        }
+
+        onload = (function(count) {
+          return function() {
+            count--;
+            if (count === 0) {
+              resolve();
+            }
+          }
+        })(imports.length);
+      }
+
       for (var i = 0; i < imports.length; i++) {
         var imp = imports[i];
-        promises.push(new Promise(function(resolve, reject) {
-          Polymer.Base.importHref(imp.href, resolve, reject, imp.async);
-        }));
+        Polymer.Base.importHref(imp.href, onload, onerror, imp.async);
       }
-      return Promise.all(promises);
     }
 
   };
